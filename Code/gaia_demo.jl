@@ -23,7 +23,7 @@ end
 
 
 
-function add_all_effects(est_effects, multips)
+function add_all_effects_global(est_effects, multips)
 
     effs = DataFrame(Effect=Float64[], Probability=Float64[])
 
@@ -39,13 +39,37 @@ function add_all_effects(est_effects, multips)
     return effs
 end
 
+function add_all_effects_local(est_effects)
 
-function gaia_demo(csv, x, y, alpha_val)
+    effs = DataFrame(Effect=Float64[], Probability=Float64[])
+
+    for k in keys(est_effects)
+        if get(est_effects, k, 0) in effs[:,1]
+        n = get(est_effects, k, 0)
+        effs[effs.Effect .== n, :Probability] .= effs[effs.Effect .== n, :Probability] .+ 1/length(est_effects)
+        else
+            push!(effs, (get(est_effects, k, 0), 1/length(est_effects)))
+        end
+    end
+
+    return effs
+end
+
+
+function gaia_demo_global(csv, x, y, alpha_val)
     data = DataFrame(csv)
     est_CPDAG = pcalg(data, alpha_val, gausscitest)
     est_effects, multips = multiplicities(est_CPDAG, x, y, data)
-    print(est_effects)
-    all_effects = add_all_effects(est_effects, multips)
+    all_effects = add_all_effects_global(est_effects, multips)
+    CSV.write("all_effects.csv", all_effects)
+    return all_effects
+end
+
+function gaia_demo_local(csv, x, y, alpha_val)
+    data = DataFrame(csv)
+    est_CPDAG = pcalg(data, alpha_val, gausscitest)
+    est_effects = loc_ida(est_CPDAG, x, y, data)
+    all_effects = add_all_effects_local(est_effects)
     CSV.write("all_effects.csv", all_effects)
     return all_effects
 end
@@ -59,7 +83,7 @@ csv = CSV.read("/Users/bjornfilter/Desktop/GAIA/csv/syndata.csv", DataFrame)
 x = 7
 y = 16
 alpha_val = 0.02
-all_effects = gaia_demo(csv, x, y, alpha_val)
+all_effects = gaia_demo_local(csv, x, y, alpha_val)
 
 
 # nodelabel = 1:nv(net)

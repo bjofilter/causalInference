@@ -174,6 +174,9 @@ end
 function loc_ida(G, x, y, df)
     n = nv(G)
     effects = Dict{Vector{Int64}, Float64}()
+    x_y_connected = true
+
+
     bp = Vector{Int64}()
     up = Vector{Int64}()
     for p in inneighbors(G, x)
@@ -183,6 +186,15 @@ function loc_ida(G, x, y, df)
             push!(up, p)
         end
     end
+
+    for component in connected_components(G)
+        if x in component
+            if !(y in component)
+                x_y_connected = false
+            end
+        end
+    end
+
     mat = cov(Matrix(df))
     for parents in cliques(G, up)
         resp = Term(Meta.parse("x" * string(y)))
@@ -198,7 +210,7 @@ function loc_ida(G, x, y, df)
         end
         pr = map(x -> Meta.parse(x), pr)
         pred = Tuple(Term.(pr))
-        if y in pa
+        if y in pa || !x_y_connected
             effects[parents] = 0
         else
             # effects[parents] = coef(lm(FormulaTerm(resp, pred), df))[2]
